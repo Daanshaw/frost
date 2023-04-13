@@ -1,12 +1,8 @@
 package main
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
-	"os"
-	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/taurusgroup/multi-party-sig/internal/test"
@@ -99,19 +95,19 @@ func FrostSignTaproot(c *frost.TaprootConfig, id party.ID, m []byte, signers par
 func All(id party.ID, ids party.IDSlice, threshold int, message []byte, n *test.Network, wg *sync.WaitGroup, pl *pool.Pool) error {
 	defer wg.Done()
 
-	// XOR
+	fmt.Printf("Party %s: Starting XOR\n", id)
 	err := XOR(id, ids, n)
 	if err != nil {
 		return err
 	}
 
-	// FROST KEYGEN
+	fmt.Printf("Party %s: Starting FROST Keygen\n", id)
 	frostResult, err := FrostKeygen(id, ids, threshold, n)
 	if err != nil {
 		return err
 	}
 
-	// FROST KEYGEN TAPROOT
+	fmt.Printf("Party %s: Starting FROST Keygen Taproot\n", id)
 	frostResultTaproot, err := FrostKeygenTaproot(id, ids, threshold, n)
 	if err != nil {
 		return err
@@ -123,51 +119,26 @@ func All(id party.ID, ids party.IDSlice, threshold int, message []byte, n *test.
 		return nil
 	}
 
-	// FROST SIGN
+	fmt.Printf("Party %s: Starting FROST Sign\n", id)
 	err = FrostSign(frostResult, id, message, signers, n)
 	if err != nil {
 		return err
 	}
 
-	// FROST SIGN TAPROOT
+	fmt.Printf("Party %s: Starting FROST Sign Taproot\n", id)
 	err = FrostSignTaproot(frostResultTaproot, id, message, signers, n)
 	if err != nil {
 		return err
 	}
 
+	fmt.Printf("Party %s: Completed\n", id)
 	return nil
 }
 
 func main() {
-	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Print("Enter the number of parties: ")
-	partiesInput, err := reader.ReadString('\n')
-	if err != nil {
-		panic(err)
-	}
-	partiesInput = strings.TrimSpace(partiesInput)
-	parties, err := strconv.Atoi(partiesInput)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Print("Enter the threshold: ")
-	thresholdInput, err := reader.ReadString('\n')
-	if err != nil {
-		panic(err)
-	}
-	thresholdInput = strings.TrimSpace(thresholdInput)
-	threshold, err := strconv.Atoi(thresholdInput)
-	if err != nil {
-		panic(err)
-	}
-
-	ids := make(party.IDSlice, parties)
-	for i := 0; i < parties; i++ {
-		ids[i] = party.ID(fmt.Sprintf("p%d", i))
-	}
-
+	ids := party.IDSlice{"a", "b", "c", "d", "e"}
+	threshold := 4
 	messageToSign := []byte("hello")
 
 	net := test.NewNetwork(ids)
